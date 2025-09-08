@@ -54,6 +54,8 @@ This changelog is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - Approved transfer support to TransferTransaction
 - set_transaction_id() API to Transaction class
 - Allowance examples (hbar_allowance.py, token_allowance.py, nft_allowance.py)
+- `set_node_account_ids` method for setting node account IDs in transactions.
+- Updated `_select_node_account_id` to clarify behavior in docstring.
 
 ### Changed
 
