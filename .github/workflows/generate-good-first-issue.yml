@@ -20,7 +20,7 @@ jobs:
         id: guidelines
         run: |
           echo "content<<EOF" >> $GITHUB_OUTPUT
-          cat docs/maintainers/good_first_issue_guidelines.md >> $GITHUB_OUTPUT
+          cat docs/maintainers/good_first_issues_guidelines.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Read template
@@ -47,8 +47,10 @@ jobs:
           system-prompt: |
             You are a maintainer generating a high-quality "good first issue".
 
-            Follow the provided guidelines strictly.
-            Use the provided issue template exactly.
+            The template is written in YAML format.
+            Convert it into a clean GitHub issue body (markdown).
+
+            Follow the structure and fields, but DO NOT output YAML.
 
             Only generate beginner-friendly issues:
             - < 2 hours work
