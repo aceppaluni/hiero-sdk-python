@@ -1,7 +1,12 @@
 name: Generate Good First Issue
 
 on:
-  workflow_dispatch: # manual trigger
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  models: read
 
 jobs:
   generate-issue:
@@ -11,16 +16,72 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Read guidelines
+        id: guidelines
+        run: |
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          cat docs/maintainers/good_first_issue_guidelines.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Read template
+        id: template
+        run: |
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          cat .github/ISSUE_TEMPLATE/02_good_first_issue.yml >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Pick file
+        id: file
+        run: |
+          FILE=$(find . -name "*.py" | grep -v test | head -n 1)
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          head -n 200 "$FILE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate issue with AI
+        id: ai
+        uses: actions/ai-inference@v1
         with:
-          python-version: '3.11'
+          model: mistral-ai/ministral-3b
+          system-prompt: |
+            You are a maintainer generating a high-quality "good first issue".
 
-      - name: Install dependencies
-        run: pip install openai PyGithub
+            Follow the provided guidelines strictly.
+            Use the provided issue template exactly.
 
-      - name: Run generator
+            Only generate beginner-friendly issues:
+            - < 2 hours work
+            - 1–2 files max
+            - clear acceptance criteria
+
+            If no suitable issue exists, return ONLY: NONE
+          prompt: |
+            --- GUIDELINES ---
+            ${{ steps.guidelines.outputs.content }}
+
+            --- TEMPLATE ---
+            ${{ steps.template.outputs.content }}
+
+            --- CODE ---
+            File: ${{ steps.file.outputs.file }}
+
+            ${{ steps.file.outputs.content }}
+
+      - name: Create issue
+        if: steps.ai.outputs.response != 'NONE'
+        uses: actions/github-script@v7
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/generate_issue.py
+          ISSUE_BODY: ${{ steps.ai.outputs.response }}
+        with:
+          script: |
+            const body = process.env.ISSUE_BODY;
+            const title = body.split("\n")[0].slice(0, 100);
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ["good first issue"]
+            });
