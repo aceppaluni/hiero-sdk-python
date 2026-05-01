@@ -175,7 +175,7 @@ def test_invalid_argument_error(mock_post):
 
     tx = TransferTransaction()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         FeeEstimateQuery().set_transaction(tx).execute(mock_client())
 
 
