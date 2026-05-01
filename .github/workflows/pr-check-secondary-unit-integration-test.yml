@@ -132,6 +132,7 @@ jobs:
         uses: hiero-ledger/hiero-solo-action@692b186bd2e4c8d46b9deb1c067dc6ddcf0abcd7 # v0.15.0
         with:
           installMirrorNode: true
+          mirrorNodeVersion: v0.153.0
 
       - name: Run integration tests
         id: integration
