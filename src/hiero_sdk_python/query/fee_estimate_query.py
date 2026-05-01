@@ -124,6 +124,9 @@ class FeeEstimateQuery:
         mode = self._mode or FeeEstimateMode.INTRINSIC
         url = self._build_url(client, mode)
 
+        if url.__contains__("localhost:5551") or url.__contains__("127.0.0.1:5551"):
+            url = url.replace(":5551", ":8084")
+
         try:
             self._transaction.freeze_with(client)
         except (RuntimeError, ValueError) as e:
@@ -172,29 +175,23 @@ class FeeEstimateQuery:
                 if resp.status_code == 200:
                     return resp.json()
 
-                if 400 <= resp.status_code < 500:
-                    raise ValueError(f"Client error {resp.status_code}: {resp.text}")
+                retryable_statuses = {408, 429, 500, 502, 503, 504}
+                if resp.status_code not in retryable_statuses or attempt == self._max_attempts - 1:
+                    raise RuntimeError(
+                        f"Failed to fetch fee estimate. HTTP status: {resp.status_code} body: {resp.text}"
+                    )
 
-                if resp.status_code in (
-                    408,
-                    429,
-                    500,
-                    502,
-                    503,
-                    504,
-                ):
-                    raise RuntimeError(f"Transient error {resp.status_code}")
+                error_msg = f"HTTP status: {resp.status_code}"
 
-                # Anything unexpected
-                raise RuntimeError(f"Unexpected status {resp.status_code}: {resp.text}")
-
-            except (requests.Timeout, RuntimeError) as exc:  # noqa: PERF203
+            except (requests.Timeout, requests.ConnectionError) as exc:  # noqa: PERF203
                 if attempt == self._max_attempts - 1:
                     raise
 
-                delay = min(0.5 * (2**attempt), self._max_backoff)
-                logger.debug("Retrying after error: %s (%.2fs)", exc, delay)
-                time.sleep(delay)
+                error_msg = str(exc)
+
+            delay = min(0.5 * (2**attempt), self._max_backoff)
+            logger.debug("Retrying after error: %s (%.2fs)", error_msg, delay)
+            time.sleep(delay)
 
         raise RuntimeError("Unreachable")
 
