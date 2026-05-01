@@ -263,3 +263,69 @@ def test_topic_message_multiple_chunks(mock_post):
     assert result.service_fee.base == 20 * 2
     assert result.network_fee.subtotal == 1 * 2
     assert result.total == 210 * 2
+
+
+# ---------------------------------------------------------------------
+# Configuration / validation coverage
+# ---------------------------------------------------------------------
+
+
+def test_high_volume_throttle_validation():
+    q = FeeEstimateQuery()
+
+    with pytest.raises(TypeError):
+        q.set_high_volume_throttle("100")
+
+    with pytest.raises(ValueError):
+        q.set_high_volume_throttle(-1)
+
+    with pytest.raises(ValueError):
+        q.set_high_volume_throttle(10001)
+
+    # valid case
+    q.set_high_volume_throttle(5000)
+    assert q.get_high_volume_throttle() == 5000
+
+
+def test_max_attempts_validation():
+    q = FeeEstimateQuery()
+
+    with pytest.raises(TypeError):
+        q.set_max_attempts("3")
+
+    with pytest.raises(ValueError):
+        q.set_max_attempts(0)
+
+    # valid case
+    q.set_max_attempts(2)
+    assert q._max_attempts == 2
+
+
+def test_max_backoff_validation():
+    q = FeeEstimateQuery()
+
+    with pytest.raises(TypeError):
+        q.set_max_backoff("fast")
+
+    with pytest.raises(ValueError):
+        q.set_max_backoff(0)
+
+    # valid case
+    q.set_max_backoff(1.5)
+    assert q._max_backoff == 1.5
+
+
+def test_getters_and_defaults():
+    q = FeeEstimateQuery()
+
+    assert q.get_mode() is None
+    assert q.get_transaction() is None
+    assert q.get_high_volume_throttle() == 0
+
+
+def test_setters_are_chainable():
+    q = FeeEstimateQuery()
+
+    result = q.set_max_attempts(2).set_max_backoff(1.0).set_high_volume_throttle(100)
+
+    assert result is q

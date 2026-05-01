@@ -99,7 +99,7 @@ class FeeEstimateQuery:
 
     def set_max_backoff(self, seconds: float) -> FeeEstimateQuery:
         """Set maximum exponential backoff delay."""
-        if not isinstance(seconds, (int, float)):
+        if not isinstance(seconds, (int | float)):
             raise TypeError("seconds must be a number")
 
         if seconds <= 0:
