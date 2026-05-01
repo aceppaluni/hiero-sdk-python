@@ -73,6 +73,12 @@ class FeeEstimateQuery:
 
     def set_high_volume_throttle(self, high_volume_throttle: int) -> FeeEstimateQuery:
         """Set high-volume throttle utilization in basis points (0-10000, where 10000 = 100%)."""
+        if not isinstance(high_volume_throttle, int):
+            raise TypeError("high_volume_throttle must be an integer")
+
+        if high_volume_throttle < 0 or high_volume_throttle > 10000:
+            raise ValueError("high_volume_throttle must be between 0 and 10000")
+
         self._high_volume_throttle = high_volume_throttle
         return self
 
@@ -82,12 +88,24 @@ class FeeEstimateQuery:
 
     def set_max_attempts(self, attempts: int) -> FeeEstimateQuery:
         """Set retry attempt limit."""
+        if not isinstance(attempts, int):
+            raise TypeError("attempts must be an integer")
+
+        if attempts < 1:
+            raise ValueError("attempts must be >= 1")
+
         self._max_attempts = attempts
         return self
 
     def set_max_backoff(self, seconds: float) -> FeeEstimateQuery:
         """Set maximum exponential backoff delay."""
-        self._max_backoff = seconds
+        if not isinstance(seconds, (int, float)):
+            raise TypeError("seconds must be a number")
+
+        if seconds <= 0:
+            raise ValueError("seconds must be > 0")
+
+        self._max_backoff = float(seconds)
         return self
 
     def execute(self, client) -> FeeEstimateResponse:
@@ -100,7 +118,6 @@ class FeeEstimateQuery:
         Raises:
             ValueError: if no transaction is set or request is invalid (HTTP 400)
         """
-        print("Executing")
         if self._transaction is None:
             raise ValueError("Transaction must be set")
 
@@ -117,7 +134,6 @@ class FeeEstimateQuery:
         self._ensure_frozen(self._transaction, client)
 
         if self._is_chunked():
-            print("Executing chunk....")
             return self._execute_chunked(client, url, mode)
 
         return self._execute_single(client, url, mode)
@@ -144,8 +160,6 @@ class FeeEstimateQuery:
 
     def _post(self, url: str, payload: bytes) -> dict:
         """POST with retry for transient failures."""
-
-        print(payload)
         for attempt in range(self._max_attempts):
             try:
                 resp = requests.post(
@@ -155,13 +169,24 @@ class FeeEstimateQuery:
                     timeout=10,
                 )
 
-                if resp.status_code == 400:
-                    raise ValueError("Malformed transaction (HTTP 400)")
+                if resp.status_code == 200:
+                    return resp.json()
 
-                if resp.status_code in (500, 503):
+                if 400 <= resp.status_code < 500:
+                    raise ValueError(f"Client error {resp.status_code}: {resp.text}")
+
+                if resp.status_code in (
+                    408,
+                    429,
+                    500,
+                    502,
+                    503,
+                    504,
+                ):
                     raise RuntimeError(f"Transient error {resp.status_code}")
 
-                return resp.json()
+                # Anything unexpected
+                raise RuntimeError(f"Unexpected status {resp.status_code}: {resp.text}")
 
             except (requests.Timeout, RuntimeError) as exc:  # noqa: PERF203
                 if attempt == self._max_attempts - 1:
@@ -235,7 +260,6 @@ class FeeEstimateQuery:
         )
 
     def _to_response(self, data: dict, mode: FeeEstimateMode) -> FeeEstimateResponse:
-        print(data)
 
         node_data = data.get("node", {})
         service_data = data.get("service", {})
