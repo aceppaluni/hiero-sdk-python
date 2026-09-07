@@ -9,13 +9,16 @@ Query Balance Example.
 ...
 """
 
+import json
+import os
 import sys
 import time
+from urllib.request import Request, urlopen
 
 from hiero_sdk_python import (
     AccountCreateTransaction,
+    AccountId,
     Client,
-    CryptoGetAccountBalanceQuery,
     Hbar,
     PrivateKey,
     ResponseCode,
@@ -43,6 +46,22 @@ def setup_client():
     except ValueError as e:
         print(f"Error setting up client: {e}")
         sys.exit(1)
+
+
+def get_mirror_node_url():
+    """Return the Mirror Node URL for the configured Hedera network."""
+    network = os.getenv("HEDERA_NETWORK", "testnet").lower()
+
+    mirror_node_urls = {
+        "mainnet": "https://mainnet-public.mirrornode.hedera.com",
+        "testnet": "https://testnet.mirrornode.hedera.com",
+        "previewnet": "https://previewnet.mirrornode.hedera.com",
+    }
+
+    if network not in mirror_node_urls:
+        raise ValueError(f"Unsupported HEDERA_NETWORK: {network}. Expected mainnet, testnet, or previewnet.")
+
+    return mirror_node_urls[network]
 
 
 def create_account(client, operator_key, initial_balance=Hbar(10)):
@@ -80,18 +99,36 @@ def create_account(client, operator_key, initial_balance=Hbar(10)):
     return new_account_id, new_account_private_key
 
 
-def get_balance(client, account_id):
+def get_balance(account_id: AccountId):
     """
-    Demonstrate the deprecated account balance query.
+    Get an account balance using the Mirror Node REST API.
 
-    .. deprecated::
-        CryptoGetAccountBalanceQuery is no longer supported. Use the
-        Mirror Node REST API, for example GET /api/v1/accounts/{accountId}.
+    Args:
+        account_id (AccountId): The account whose balance should be retrieved.
+
+    Returns:
+        float: Account balance in HBAR.
     """
     print(f"Querying balance for account {account_id}...")
 
-    balance_query = CryptoGetAccountBalanceQuery().set_account_id(account_id)
-    return balance_query.execute(client)
+    mirror_node_url = get_mirror_node_url()
+    url = f"{mirror_node_url}/api/v1/accounts/{account_id}"
+
+    request = Request(
+        url,
+        headers={"Accept": "application/json"},
+    )
+
+    with urlopen(request, timeout=10) as response:
+        data = json.load(response)
+
+    balance_tinybars = data["balance"]
+    balance_hbars = balance_tinybars / 100_000_000
+
+    print("✓ Account balance retrieved successfully")
+    print(f"  HBAR balance: {balance_hbars} hbars")
+
+    return balance_hbars
 
 
 def transfer_hbars(client, operator_id, operator_key, recipient_id, amount):
@@ -143,9 +180,7 @@ def main():
         print("=" * 60)
         print("INITIAL BALANCE CHECK")
         print("=" * 60)
-        initial_balance = get_balance(client, new_account_id)
-        if initial_balance is None:
-            print(f"Use the Mirror Node REST API instead, for example GET /api/v1/accounts/{new_account_id}.")
+        initial_balance = get_balance(new_account_id)
         print(f"Initial balance of new account: {initial_balance} hbars")
         print("=" * 60 + "\n")
 
@@ -166,7 +201,7 @@ def main():
         print("=" * 60)
         print("UPDATED BALANCE CHECK")
         print("=" * 60)
-        updated_balance = get_balance(client, new_account_id)
+        updated_balance = get_balance(new_account_id)
         print(f"Updated balance of new account: {updated_balance} hbars")
         print("=" * 60 + "\n")
 

@@ -8,8 +8,10 @@
    account balances.
 """
 
+import json
 import os
 import sys
+from urllib.request import Request, urlopen
 
 from hiero_sdk_python import (
     AccountCreateTransaction,
@@ -23,7 +25,6 @@ from hiero_sdk_python import (
     TokenMintTransaction,
     TokenType,
 )
-from hiero_sdk_python.query.account_balance_query import CryptoGetAccountBalanceQuery
 from hiero_sdk_python.tokens.token_id import TokenId
 
 
@@ -39,6 +40,22 @@ def setup_client():
     except ValueError as e:
         print(f"Error setting up client: {e}")
         sys.exit(1)
+
+
+def get_mirror_node_url():
+    """Return the Mirror Node URL for the configured Hedera network."""
+    network = os.getenv("HEDERA_NETWORK", "testnet").lower()
+
+    mirror_node_urls = {
+        "mainnet": "https://mainnet-public.mirrornode.hedera.com",
+        "testnet": "https://testnet.mirrornode.hedera.com",
+        "previewnet": "https://previewnet.mirrornode.hedera.com",
+    }
+
+    if network not in mirror_node_urls:
+        raise ValueError(f"Unsupported HEDERA_NETWORK: {network}. Expected mainnet, testnet, or previewnet.")
+
+    return mirror_node_urls[network]
 
 
 def create_account(client, name, initial_balance=Hbar(10)):
@@ -95,20 +112,41 @@ def create_and_mint_token(treasury_account_id, treasury_account_key, client):
         sys.exit(1)
 
 
-def get_account_balance(client: Client, account_id: AccountId):
-    """Get account balance using CryptoGetAccountBalanceQuery."""
-    print(f"Retrieving account balance for account id: {account_id}  ...")
+def get_account_balance(account_id: AccountId):
+    """Get account balance using the Mirror Node REST API."""
+    print(f"Retrieving account balance for account id: {account_id} ...")
+
+    mirror_node_url = get_mirror_node_url()
+    url = f"{mirror_node_url}/api/v1/accounts/{account_id}"
+
+    request = Request(
+        url,
+        headers={"Accept": "application/json"},
+    )
+
     try:
-        # Use CryptoGetAccountBalanceQuery to get the account balance
-        account_balance = CryptoGetAccountBalanceQuery().set_account_id(account_id).execute(client)
+        with urlopen(request, timeout=10) as response:
+            data = json.load(response)
+
+        hbar_balance = data["balance"] / 100_000_000
+
         print("✅ Account balance retrieved successfully!")
-        # Print account balance with account_id context
-        print(f"💰 HBAR Balance for {account_id}: {account_balance.hbars} hbars")
-        # Alternatively, you can use: print(account_balance)
-        return account_balance
-    except (ValueError, TypeError, RuntimeError, ConnectionError) as error:
-        print(f"Error retrieving account balance: {error}")
+        print(f"💰 HBAR Balance for {account_id}: {hbar_balance} hbars")
+
+        return data
+
+    except Exception as error:
+        print(f"❌ Error retrieving account balance: {error}")
         sys.exit(1)
+
+
+def get_token_balance(balance_data, token_id: TokenId):
+    """Get a token balance from a Mirror Node account response."""
+    for token in balance_data.get("balance", {}).get("tokens", []):
+        if token["token_id"] == str(token_id):
+            return token["balance"]
+
+    return 0
 
 
 # OPTIONAL comparison function

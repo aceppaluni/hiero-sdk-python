@@ -16,7 +16,6 @@ from hiero_sdk_python.executable import (
 )
 from hiero_sdk_python.hapi.services import (
     basic_types_pb2,
-    crypto_get_account_balance_pb2,
     query_pb2,
     response_header_pb2,
     response_pb2,
@@ -427,58 +426,20 @@ def test_transaction_node_switching_body_bytes():
         )
 
 
-def test_query_retry_on_busy():
+def test_query_raises_when_account_balance_query_is_unsupported():
     """
-    Test query retry behavior when receiving BUSY response.
-
-    This test simulates two scenarios:
-    1. First node returns BUSY response
-    2. Second node returns OK response with the balance
-
-    Verifies that the query successfully retries on a different node after receiving BUSY,
-    that the balance is returned correctly and that time.sleep was called once for the retry delay.
+    Test that account balance queries raise an error because the
+    CryptoGetBalance endpoint is no longer supported.
     """
-    # Create a BUSY response to simulate a node being temporarily unavailable
-    # This response indicates the node cannot process the request at this time
-    busy_response = response_pb2.Response(
-        cryptogetAccountBalance=crypto_get_account_balance_pb2.CryptoGetAccountBalanceResponse(
-            header=response_header_pb2.ResponseHeader(nodeTransactionPrecheckCode=ResponseCode.BUSY)
-        )
-    )
-
-    # Create a successful OK response with a balance of 1 Hbar
-    # This simulates a successful account balance query response
-    ok_response = response_pb2.Response(
-        cryptogetAccountBalance=crypto_get_account_balance_pb2.CryptoGetAccountBalanceResponse(
-            header=response_header_pb2.ResponseHeader(nodeTransactionPrecheckCode=ResponseCode.OK),
-            balance=100000000,  # Balance in tinybars
-        )
-    )
-
-    # Set up response sequences for multiple nodes:
-    # First node returns BUSY, forcing a retry
-    # Second node returns OK with the balance
-    response_sequences = [
-        [busy_response, ok_response],
-        [ok_response],  # additional response to mimic additional node
-    ]
-
-    with (
-        mock_hedera_servers(response_sequences) as client,
-        patch("hiero_sdk_python.executable.time.sleep") as mock_sleep,
-    ):
+    with mock_hedera_servers([]) as client:
         query = CryptoGetAccountBalanceQuery()
         query.set_account_id(AccountId(0, 0, 1234))
 
-        balance = query.execute(client)
-
-        # Verify we slept once for the retry
-        assert mock_sleep.call_count == 1, "Should have retried once"
-
-        assert balance.hbars.to_tinybars() == 100000000
-        # Verify we switched to the second node
-        assert query._node_account_ids.index == 0
-        assert query._node_account_ids.current == AccountId(0, 0, 3), "Client should have switched to the second node"
+        with pytest.raises(
+            RuntimeError,
+            match="AccountBalanceQuery is no longer supported",
+        ):
+            query.execute(client)
 
 
 # Set max_attempts
