@@ -128,7 +128,7 @@ def get_account_balance(account_id: AccountId):
         with urlopen(request, timeout=10) as response:
             data = json.load(response)
 
-        hbar_balance = data["balance"] / 100_000_000
+        hbar_balance = data["balance"]["balance"] / 100_000_000
 
         print("✅ Account balance retrieved successfully!")
         print(f"💰 HBAR Balance for {account_id}: {hbar_balance} hbars")
@@ -149,17 +149,16 @@ def get_token_balance(balance_data, token_id: TokenId):
     return 0
 
 
-# OPTIONAL comparison function
-def compare_token_balances(client, treasury_id: AccountId, receiver_id: AccountId, token_id: TokenId):
+def compare_token_balances(treasury_id: AccountId, receiver_id: AccountId, token_id: TokenId):
     """Compare token balances between two accounts."""
     print(f"\n🔎 Comparing token balances for Token ID {token_id} between accounts {treasury_id} and {receiver_id}...")
-    # retrieve balances for both accounts
-    treasury_balance = get_account_balance(client, treasury_id)
-    receiver_balance = get_account_balance(client, receiver_id)
-    # extract token balances
-    treasury_token_balance = treasury_balance.token_balances.get(token_id, 0)
-    receiver_token_balance = receiver_balance.token_balances.get(token_id, 0)
-    # print results
+
+    treasury_balance = get_account_balance(treasury_id)
+    receiver_balance = get_account_balance(receiver_id)
+
+    treasury_token_balance = get_token_balance(treasury_balance, token_id)
+    receiver_token_balance = get_token_balance(receiver_balance, token_id)
+
     print(f"🏷️ Token balance for Treasury ({treasury_id}): {treasury_token_balance}")
     print(f"🏷️ Token balance for Receiver ({receiver_id}): {receiver_token_balance}")
 
@@ -181,7 +180,7 @@ def main():
     # will be owned by the test account and show up in its token balances.
     token_id = create_and_mint_token(test_account_id, test_account_key, client)
     # Retrieve and display account balance for the test account
-    get_account_balance(client, test_account_id)
+    get_account_balance(test_account_id)
     # OPTIONAL comparison of token balances between test account and operator account
     compare_token_balances(client, test_account_id, client.operator_account_id, token_id)
 

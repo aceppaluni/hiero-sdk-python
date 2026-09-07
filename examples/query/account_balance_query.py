@@ -122,7 +122,7 @@ def get_balance(account_id: AccountId):
     with urlopen(request, timeout=10) as response:
         data = json.load(response)
 
-    balance_tinybars = data["balance"]
+    balance_tinybars = data["balance"]["balance"]
     balance_hbars = balance_tinybars / 100_000_000
 
     print("✓ Account balance retrieved successfully")
