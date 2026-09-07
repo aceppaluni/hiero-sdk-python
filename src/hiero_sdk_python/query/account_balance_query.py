@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import Any
 
 from hiero_sdk_python.account.account_balance import AccountBalance
@@ -18,10 +19,12 @@ logger = logging.getLogger(__name__)
 
 class CryptoGetAccountBalanceQuery(Query):
     """
-    A query to retrieve the balance of a specific account from the Hedera network.
+    Query an account's balance.
 
-    This class constructs and executes a query to obtain the balance of an account,
-    including hbars and tokens.
+    .. deprecated::
+        The CryptoGetBalance endpoint is scheduled for removal with the
+        consensus node release 77 (estimated September 2026). Use the Mirror
+        Node REST API to retrieve account balances instead.
     """
 
     def __init__(
@@ -29,13 +32,11 @@ class CryptoGetAccountBalanceQuery(Query):
         account_id: AccountId | None = None,
         contract_id: ContractId | None = None,
     ) -> None:
-        """
-        Initializes a new instance of the CryptoGetAccountBalanceQuery class.
-
-        Args:
-            account_id (AccountId, optional): The ID of the account to retrieve the balance for.
-            contract_id (ContractId, optional): The ID of the contract to retrieve the balance for.
-        """
+        warnings.warn(
+            "Deprecated: AccountBalanceQuery will stop working when the Hedera network removes the CryptoGetBalance endpoint (estimated September 2026, consensus node release 77). Use the mirror node REST API to retrieve account balances.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__()
         self.account_id: AccountId | None = None
         self.contract_id: ContractId | None = None
@@ -133,25 +134,20 @@ class CryptoGetAccountBalanceQuery(Query):
 
     def execute(self, client: Client, timeout: int | float | None = None) -> AccountBalance:
         """
-        Executes the account balance query.
+        Execute the account balance query.
 
-        This function delegates the core logic to `_execute()`, and may propagate exceptions raised by it.
-
-        Sends the query to the Hedera network and processes the response
-        to return an AccountBalance object.
-
-        Args:
-            client (Client): The client instance to use for execution
-            timeout (Optional[Union[int, float]]): The total execution timeout (in seconds) for this execution.
-
-        Returns:
-            AccountBalance: The account balance from the network
+        .. deprecated::
+            The CryptoGetBalance endpoint is scheduled for removal with the
+            consensus node release 77 (estimated September 2026). Use the Mirror
+            Node REST API to retrieve account balances instead.
 
         Raises:
-            PrecheckError: If the query fails with a non-retryable error
-            MaxAttemptsError: If the query fails after the maximum number of attempts
-            ReceiptStatusError: If the query fails with a receipt status error
+            RuntimeError: Always, because the AccountBalanceQuery is no longer
+                supported.
         """
+        raise RuntimeError(
+            "Error: AccountBalanceQuery is no longer supported. Use the mirror node REST API to retrieve account balances."
+        )
         self._before_execute(client)
         response = self._execute(client, timeout)
 

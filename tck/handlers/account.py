@@ -266,7 +266,10 @@ def delete_account(params: DeleteAccountParams) -> DeleteAccountResponse:
 
 @rpc_method("getAccountBalance")
 def get_account_balance(params: GetAccountBalanceParams) -> GetAccountBalanceResponse:
-    """Get account balance for an account."""
+    """Get account balance for an account.
+
+    Deprecated: use the Mirror Node REST API instead.
+    """
     client = get_client(params.sessionId)
 
     query = CryptoGetAccountBalanceQuery().set_grpc_deadline(DEFAULT_GRPC_TIMEOUT)
@@ -276,7 +279,14 @@ def get_account_balance(params: GetAccountBalanceParams) -> GetAccountBalanceRes
     if params.contractId is not None:
         query.set_contract_id(ContractId.from_string(params.contractId))
 
-    account_balance = query.execute(client)
+    try:
+        account_balance = query.execute(client)
+    except RuntimeError as exc:
+        raise RuntimeError(
+            "Error: AccountBalanceQuery is no longer supported. "
+            "Use the mirror node REST API to retrieve account balances."
+        ) from exc
+
     return map_account_balance_response(account_balance)
 
 

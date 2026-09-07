@@ -92,14 +92,26 @@ You can choose either syntax or even mix both styles in your projects.
 
 ### Querying Account Balance
 
+> **Deprecated:** `CryptoGetAccountBalanceQuery` is no longer supported.
+> The `CryptoGetBalance` endpoint is scheduled for removal with consensus
+> node release 77 (estimated September 2026). Use the Mirror Node REST API
+> instead, for example `GET /api/v1/accounts/{accountId}`.
+
+The following examples demonstrate the deprecated SDK call path and will
+raise an error when executed.
+
 #### Pythonic Syntax:
-```
-balance = CryptoGetAccountBalanceQuery(account_id=some_account_id).execute(client) print(f"Account balance: {balance.hbars} hbars")
+```python
+balance = CryptoGetAccountBalanceQuery(account_id=some_account_id).execute(client)
 ```
 
 #### Method Chaining:
 ```
-balance = ( CryptoGetAccountBalanceQuery() .set_account_id(some_account_id) .execute(client) ) print(f"Account balance: {balance.hbars} hbars")
+balance = (
+    CryptoGetAccountBalanceQuery()
+    .set_account_id(some_account_id)
+    .execute(client)
+)
 ```
 
 ### Creating an Account

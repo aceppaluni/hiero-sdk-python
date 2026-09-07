@@ -1,18 +1,12 @@
 """
-
-
 Query Balance Example.
 
-This script demonstrates how to:
-1. Set up a client connection to the Hedera network
-2. Create a new account with an initial balance
-3. Query account balance
-4. Transfer HBAR between accounts
+.. deprecated::
+   CryptoGetAccountBalanceQuery is no longer supported. Use the Mirror Node
+   REST API, for example GET /api/v1/accounts/{accountId}, to retrieve
+   account balances.
 
-Run with:
-  uv run examples/query/account_balance_query.py
-  python examples/query/account_balance_query.py
-
+...
 """
 
 import sys
@@ -88,23 +82,16 @@ def create_account(client, operator_key, initial_balance=Hbar(10)):
 
 def get_balance(client, account_id):
     """
-    Query and retrieve the HBAR balance of an account.
+    Demonstrate the deprecated account balance query.
 
-    Args:
-        client (Client): The Hiero SDK client.
-        account_id (AccountId): The account ID to query.
-
-    Returns:
-        Hbar: The account's current balance in HBAR.
+    .. deprecated::
+        CryptoGetAccountBalanceQuery is no longer supported. Use the
+        Mirror Node REST API, for example GET /api/v1/accounts/{accountId}.
     """
     print(f"Querying balance for account {account_id}...")
 
     balance_query = CryptoGetAccountBalanceQuery().set_account_id(account_id)
-    balance = balance_query.execute(client)
-
-    balance_hbar = balance.hbars.to_hbars()
-    print(f"✓ Balance retrieved: {balance_hbar} hbars\n")
-    return balance_hbar
+    return balance_query.execute(client)
 
 
 def transfer_hbars(client, operator_id, operator_key, recipient_id, amount):
@@ -157,6 +144,8 @@ def main():
         print("INITIAL BALANCE CHECK")
         print("=" * 60)
         initial_balance = get_balance(client, new_account_id)
+        if initial_balance is None:
+            print(f"Use the Mirror Node REST API instead, for example GET /api/v1/accounts/{new_account_id}.")
         print(f"Initial balance of new account: {initial_balance} hbars")
         print("=" * 60 + "\n")
 

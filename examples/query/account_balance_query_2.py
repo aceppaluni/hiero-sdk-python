@@ -2,10 +2,10 @@
 # python examples/query/account_balance_query_2.py
 
 """
-
-Example: Use CryptoGetAccountBalanceQuery to retrieve an account's.
-
-HBAR and token balances, including minting NFTs to the account.
+.. deprecated::
+   CryptoGetAccountBalanceQuery is no longer supported. Use the Mirror Node
+   REST API, for example GET /api/v1/accounts/{accountId}, to retrieve
+   account balances.
 """
 
 import os
