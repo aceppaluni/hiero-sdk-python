@@ -182,7 +182,7 @@ def main():
     # Retrieve and display account balance for the test account
     get_account_balance(test_account_id)
     # OPTIONAL comparison of token balances between test account and operator account
-    compare_token_balances(client, test_account_id, client.operator_account_id, token_id)
+    compare_token_balances(test_account_id, client.operator_account_id, token_id)
 
 
 if __name__ == "__main__":
