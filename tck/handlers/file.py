@@ -9,7 +9,6 @@ from hiero_sdk_python.file.file_info_query import FileInfoQuery
 from hiero_sdk_python.hbar import Hbar
 from hiero_sdk_python.response_code import ResponseCode
 from hiero_sdk_python.timestamp import Timestamp
-from hiero_sdk_python.transaction.transaction_receipt import TransactionReceipt
 from tck.errors import JsonRpcError
 from tck.handlers.registry import rpc_method
 from tck.param.file import CreateFileParams, DeleteFileParams, GetFileContentsParams, GetFileInfoParams
@@ -18,6 +17,7 @@ from tck.util.client_utils import get_client
 from tck.util.constants import DEFAULT_GRPC_TIMEOUT
 from tck.util.key_utils import get_key_from_string, key_to_string
 from tck.util.param_utils import to_int
+from tck.util.transaction_utils import execute_validated
 
 
 def _build_create_file_transaction(params: CreateFileParams) -> FileCreateTransaction:
@@ -51,11 +51,10 @@ def create_file(params: CreateFileParams) -> CreateFileResponse:
     if params.commonTransactionParams is not None:
         params.commonTransactionParams.apply_common_params(transaction, client)
 
-    response = transaction.execute(client, wait_for_receipt=False)
-    receipt: TransactionReceipt = response.get_receipt(client, validate_status=True)
+    receipt = execute_validated(transaction, client)
 
     file_id = ""
-    if receipt.status == ResponseCode.SUCCESS and receipt.file_id is not None:
+    if receipt.file_id is not None:
         file_id = str(receipt.file_id)
 
     return CreateFileResponse(file_id, ResponseCode(receipt.status).name)
@@ -122,7 +121,6 @@ def delete_file(params: DeleteFileParams) -> DeleteFileResponse:
     if params.commonTransactionParams is not None:
         params.commonTransactionParams.apply_common_params(transaction, client)
 
-    response = transaction.execute(client, wait_for_receipt=False)
-    receipt: TransactionReceipt = response.get_receipt(client, validate_status=True)
+    receipt = execute_validated(transaction, client)
 
     return DeleteFileResponse(ResponseCode(receipt.status).name)
