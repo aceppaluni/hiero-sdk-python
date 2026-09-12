@@ -132,7 +132,9 @@ pytestmark = pytest.mark.unit
     ],
 )
 def test_get_transaction_class(transaction_type, expected_class):
-    assert Transaction._get_transaction_class(transaction_type) is expected_class
+    actual_class = Transaction._get_transaction_class(transaction_type)
+
+    assert actual_class is expected_class
 
 
 @pytest.mark.parametrize(
