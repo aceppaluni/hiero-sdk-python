@@ -42,6 +42,8 @@ from hiero_sdk_python.prng_transaction import PrngTransaction
 from hiero_sdk_python.schedule.schedule_create_transaction import ScheduleCreateTransaction
 from hiero_sdk_python.schedule.schedule_delete_transaction import ScheduleDeleteTransaction
 from hiero_sdk_python.schedule.schedule_sign_transaction import ScheduleSignTransaction
+from hiero_sdk_python.system.freeze_transaction import FreezeTransaction
+from hiero_sdk_python.tokens.token_airdrop_claim import TokenClaimAirdropTransaction
 from hiero_sdk_python.tokens.token_airdrop_transaction import TokenAirdropTransaction
 from hiero_sdk_python.tokens.token_airdrop_transaction_cancel import (
     TokenCancelAirdropTransaction,
@@ -51,6 +53,9 @@ from hiero_sdk_python.tokens.token_burn_transaction import TokenBurnTransaction
 from hiero_sdk_python.tokens.token_create_transaction import TokenCreateTransaction
 from hiero_sdk_python.tokens.token_delete_transaction import TokenDeleteTransaction
 from hiero_sdk_python.tokens.token_dissociate_transaction import TokenDissociateTransaction
+from hiero_sdk_python.tokens.token_fee_schedule_update_transaction import (
+    TokenFeeScheduleUpdateTransaction,
+)
 from hiero_sdk_python.tokens.token_freeze_transaction import TokenFreezeTransaction
 from hiero_sdk_python.tokens.token_grant_kyc_transaction import TokenGrantKycTransaction
 from hiero_sdk_python.tokens.token_mint_transaction import TokenMintTransaction
@@ -88,6 +93,7 @@ pytestmark = pytest.mark.unit
         ("fileCreate", FileCreateTransaction),
         ("fileDelete", FileDeleteTransaction),
         ("fileUpdate", FileUpdateTransaction),
+        ("freeze", FreezeTransaction),
         ("consensusCreateTopic", TopicCreateTransaction),
         ("consensusUpdateTopic", TopicUpdateTransaction),
         ("consensusDeleteTopic", TopicDeleteTransaction),
@@ -104,21 +110,23 @@ pytestmark = pytest.mark.unit
         ("tokenWipe", TokenWipeTransaction),
         ("tokenAssociate", TokenAssociateTransaction),
         ("tokenDissociate", TokenDissociateTransaction),
-        ("tokenPause", TokenPauseTransaction),
-        ("tokenUnpause", TokenUnpauseTransaction),
+        ("token_pause", TokenPauseTransaction),
+        ("token_unpause", TokenUnpauseTransaction),
         ("scheduleCreate", ScheduleCreateTransaction),
         ("scheduleDelete", ScheduleDeleteTransaction),
         ("scheduleSign", ScheduleSignTransaction),
-        ("tokenUpdateNfts", TokenUpdateNftsTransaction),
+        ("token_update_nfts", TokenUpdateNftsTransaction),
+        ("token_fee_schedule_update", TokenFeeScheduleUpdateTransaction),
         ("nodeCreate", NodeCreateTransaction),
         ("nodeUpdate", NodeUpdateTransaction),
         ("nodeDelete", NodeDeleteTransaction),
         ("registeredNodeCreate", RegisteredNodeCreateTransaction),
         ("registeredNodeUpdate", RegisteredNodeUpdateTransaction),
         ("registeredNodeDelete", RegisteredNodeDeleteTransaction),
-        ("utilPrng", PrngTransaction),
+        ("util_prng", PrngTransaction),
         ("tokenReject", TokenRejectTransaction),
         ("tokenAirdrop", TokenAirdropTransaction),
+        ("tokenClaimAirdrop", TokenClaimAirdropTransaction),
         ("tokenCancelAirdrop", TokenCancelAirdropTransaction),
         ("atomic_batch", BatchTransaction),
     ],
@@ -134,7 +142,6 @@ def test_get_transaction_class(transaction_type, expected_class):
         "cryptoDeleteLiveHash",
         "systemDelete",
         "systemUndelete",
-        "tokenFeeScheduleUpdate",
     ],
 )
 def test_get_transaction_class_returns_none_for_unsupported_types(transaction_type):
