@@ -51,6 +51,7 @@ from .contract.ethereum_transaction import EthereumTransaction
 from .crypto.evm_address import EvmAddress
 from .crypto.private_key import PrivateKey
 from .crypto.public_key import PublicKey
+from .crypto.signer import Signer
 
 # Duration
 from .Duration import Duration
@@ -196,6 +197,7 @@ __all__ = [
     # Crypto
     "PrivateKey",
     "PublicKey",
+    "Signer",
     "EvmAddress",
     # Tokens
     "TokenCreateTransaction",
